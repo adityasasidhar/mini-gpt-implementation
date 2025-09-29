@@ -75,8 +75,6 @@ class SimpleTokenizer:
         return ''.join([self.itos[tok] for tok in tokens])
 
 
-# --- Training and usage example ---
-
 if __name__ == "__main__":
 
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -107,8 +105,6 @@ if __name__ == "__main__":
     # Training loop
     for epoch in range(100):
         model.train()
-
-        # Get a batch of data
         inputs, targets = get_batch()
 
         optimizer.zero_grad()
@@ -119,34 +115,10 @@ if __name__ == "__main__":
         if epoch % 10 == 0:
             print(f"Epoch {epoch}, Loss: {loss.item():.4f}")
 
+
     # Save model and tokenizer
     torch.save(model.state_dict(), "tiny_transformer.pt")
     import pickle
 
     with open("tokenizer.pkl", "wb") as f:
         pickle.dump(tokenizer, f)
-
-    loaded_model = TinyTransformer(vocab_size=vocab_size, d_model=64, n_layers=4, context_len=context_len).to(device)
-    loaded_model.load_state_dict(torch.load("tiny_transformer.pt"))
-    loaded_model.eval()
-
-    with open("tokenizer.pkl", "rb") as f:
-        loaded_tokenizer = pickle.load(f)
-
-
-    def generate(model, tokenizer, start_text, length=50):
-        model.eval()
-        context = tokenizer.encode(start_text)[-context_len:]
-        context = torch.tensor(context, dtype=torch.long).unsqueeze(0).to(device)
-        generated = list(context[0].cpu().numpy())
-        for _ in range(length):
-            inp = torch.tensor([generated[-context_len:]], dtype=torch.long).to(device)
-            with torch.no_grad():
-                logits = model(inp)
-            next_token = torch.argmax(logits[0, -1], dim=-1).item()
-            generated.append(next_token)
-        return tokenizer.decode(generated)
-
-
-    print("Generated:", generate(loaded_model, loaded_tokenizer, "A ", length=50))
-
